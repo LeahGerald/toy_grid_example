@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { groupBy as rowGrouper } from 'lodash';
-import faker from 'faker';
+import { groupBy as rowGrouper, capitalize } from 'lodash';
 import './groupingGrid.css';
 
 import DataGrid, { SelectColumn } from 'react-data-grid';
@@ -8,122 +7,38 @@ import type { Column } from 'react-data-grid';
 
 
 
-interface Row {
-  id: number;
-  country: string;
-  year: number;
-  sport: string;
-  athlete: string;
-  gold: number;
-  silver: number;
-  bronze: number;
-}
-
-const sports = [
-  'Swimming',
-  'Gymnastics',
-  'Speed Skating',
-  'Cross Country Skiing',
-  'Short-Track Speed Skating',
-  'Diving',
-  'Cycling',
-  'Biathlon',
-  'Alpine Skiing',
-  'Ski Jumping',
-  'Nordic Combined',
-  'Athletics',
-  'Table Tennis',
-  'Tennis',
-  'Synchronized Swimming',
-  'Shooting',
-  'Rowing',
-  'Fencing',
-  'Equestrian',
-  'Canoeing',
-  'Bobsleigh',
-  'Badminton',
-  'Archery',
-  'Wrestling',
-  'Weightlifting',
-  'Waterpolo',
-  'Wrestling',
-  'Weightlifting'
-];
-
-const columns: readonly Column<Row>[] = [
-  SelectColumn,
-  {
-    key: 'country',
-    name: 'Country'
-  },
-  {
-    key: 'year',
-    name: 'Year'
-  },
-  {
-    key: 'sport',
-    name: 'Sport'
-  },
-  {
-    key: 'athlete',
-    name: 'Athlete'
-  },
-  {
-    key: 'gold',
-    name: 'Gold',
-    groupFormatter({ childRows }) {
-      return <>{childRows.reduce((prev, { gold }) => prev + gold, 0)}</>;
-    }
-  },
-  {
-    key: 'silver',
-    name: 'Silver',
-    groupFormatter({ childRows }) {
-      return <>{childRows.reduce((prev, { silver }) => prev + silver, 0)}</>;
-    }
-  },
-  {
-    key: 'bronze',
-    name: 'Bronze',
-    groupFormatter({ childRows }) {
-      return <>{childRows.reduce((prev, { bronze }) => prev + bronze, 0)}</>;
-    }
-  },
-  {
-    key: 'total',
-    name: 'Total',
-    formatter({ row }) {
-      return <>{row.gold + row.silver + row.bronze}</>;
-    },
-    groupFormatter({ childRows }) {
-      return <>{childRows.reduce((prev, row) => prev + row.gold + row.silver + row.bronze, 0)}</>;
-    }
-  }
-];
-
-function rowKeyGetter(row: Row) {
+function rowKeyGetter(row: any) {
   return row.id;
 }
 
-function createRows(): readonly Row[] {
-  const rows: Row[] = [];
-  for (let i = 1; i < 10000; i++) {
-    rows.push({
-      id: i,
-      year: 2015 + faker.datatype.number(3),
-      country: faker.address.country(),
-      sport: sports[faker.datatype.number(sports.length - 1)],
-      athlete: faker.name.findName(),
-      gold: faker.datatype.number(5),
-      silver: faker.datatype.number(5),
-      bronze: faker.datatype.number(5)
-    });
-  }
+const url = "f_pilot_queries f_pilot_queries 2021-06-11T1536.csv"
+var request = new XMLHttpRequest();  
+request.open("GET", url, false);   
+request.send(null);  
 
-  return rows.sort((r1, r2) => r2.country.localeCompare(r1.country));
+var csvData = new Array();
+// Retrived data from csv file content
+var jsonObject = request.responseText.split(/\r?\n|\r/);
+for (var i = 0; i < jsonObject.length; i++) {
+  csvData.push(jsonObject[i].split(','));
 }
+// set header index name
+csvData[0][0] = 'index'
+console.log(csvData);
 
-const options = ['country', 'year', 'sport', 'athlete', 'sport'] as const;
+const columns: Column<any>[] = csvData[0].map((e: string) => ({key: e, name: capitalize(e)}))
+console.log(columns)
+const actualData = csvData.slice(1)
+const createRows: any[] = []
+for (let i = 0; i < actualData.length; i++) {
+  const row = actualData[i]
+  let entry: any  = {}
+  for(let j = 0; j < row.length; j++) {
+    entry[columns[j].key] = row[j]
+  }
+  createRows.push(entry)
+}
+const options = ['Pilot Subject ID', 'Visit Name', 'Form Title'] as const;
 
 export default function Grouping() {
   const [rows] = useState(createRows);
@@ -133,7 +48,7 @@ export default function Grouping() {
     options[1]
   ]);
   const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlySet<unknown>>(
-    () => new Set<unknown>(['United States of America', 'United States of America__2015'])
+    () => new Set<unknown>([])
   );
 
   function toggleOption(option: string, enabled: boolean) {

@@ -2,9 +2,12 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    gap: 8px;
-
+    gap: 10px;
 }
+
+/* .rdg {
+    flex: 1;
+} */
 
 
 
@@ -14,3 +17,24 @@
     gap: 8px;
     text-transform: capitalize;
 }
+
+.filterClassname {
+    width: 100%;
+    padding: 4px;
+    font-size: 14px;
+}
+
+
+.filter-cell {
+    line-height: 35px;
+    padding: 0;
+}
+
+.filter-cell.div {
+    padding: 0 8px;
+}
+
+.filter-cell.div:first-child {
+    border-bottom: 1px solid var(--border-color);
+}
+

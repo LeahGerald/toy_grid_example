@@ -83,6 +83,10 @@ function serialiseCellValue(value: unknown) {
     const formattedValue = value.replace(/"/g, '""');
     return formattedValue.includes(',') ? `"${formattedValue}"` : formattedValue;
   }
+  if (typeof value === undefined) {
+    const formattedValue = ''
+    return formattedValue.includes(',') ? `"${formattedValue}"` : formattedValue;
+  }
   return value;
 }
 

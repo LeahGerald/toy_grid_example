@@ -13,7 +13,7 @@ interface gridProps {
 export const AgGrid = ({columns, rowData}: gridProps) => {
 
    return (
-       <div className="ag-theme-alpine" style={{height: '90vw', width: '90vw'}}>
+       <div className="ag-theme-alpine" style={{height: '90vw', width: '100vw'}}>
            <AgGridReact
                 defaultColDef={{
                   editable: true,
@@ -21,6 +21,7 @@ export const AgGrid = ({columns, rowData}: gridProps) => {
                   minWidth: 100,
                   flex: 1,
                 }}
+                multiSortKey={'ctrl'}
                rowData={rowData}>
               {columns.map(e => (
                 <AgGridColumn field={e} sortable={true} filter="agTextColumnFilter"></AgGridColumn>

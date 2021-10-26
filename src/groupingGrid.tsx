@@ -5,14 +5,36 @@ import './groupingGrid.css';
 import DataGrid from 'react-data-grid';
 import { useFocusRef } from './useFocusRef'
 import type { Column, HeaderRendererProps } from 'react-data-grid';
+import { exportToCsv, exportToXlsx, exportToPdf } from './groupingGridExportUtils';
 
-interface gridProps {
+type gridProps = {
   columns: Column<{[key: string]: string}>[];
   rowData: any[];
 }
 
-const options = ['Pilot Subject ID', 'Visit Name', 'Form Title'] as const;
+const options = ['Pilot Subject ID', 'Visit Name', 'Form Title', 'CRC', 'Query Type', 'Query Status', 'Query Raised By Role'] as const;
 
+function ExportButton({
+  onExport,
+  children
+}: {
+  onExport: () => Promise<unknown>;
+  children: React.ReactChild;
+}) {
+  const [exporting, setExporting] = useState(false);
+  return (
+    <button
+      disabled={exporting}
+      onClick={async () => {
+        setExporting(true);
+        await onExport();
+        setExporting(false);
+      }}
+    >
+      {exporting ? 'Exporting' : children}
+    </button>
+  );
+}
 
 // Context is needed to read filter values otherwise columns are
 // re-created when filters are changed and filter loses focus
@@ -59,10 +81,7 @@ function FilterRenderer<R, SR, T extends HTMLOrSVGElement>({
 export default function Grouping({columns, rowData}: gridProps) {
   const [rows] = useState(rowData);
   const [selectedRows, setSelectedRows] = useState<ReadonlySet<number>>(() => new Set());
-  const [selectedOptions, setSelectedOptions] = useState<readonly string[]>([
-    options[0],
-    options[1]
-  ]);
+  const [selectedOptions, setSelectedOptions] = useState<readonly string[]>([]);
   const filtertitles: {[key: string]: string } = {}
   columns.forEach(e => {
     if (typeof e.key === 'string') {
@@ -70,18 +89,9 @@ export default function Grouping({columns, rowData}: gridProps) {
     }
   })
   const [filters, setFilters] = useState<{[key: string]: string}>(filtertitles);
-  const developerOptions = useMemo(
-    () =>
-      Array.from(new Set(rows.map((r) => r[options[1]]))).map((d) => ({
-        label: d,
-        value: d
-      })),
-    [rows]
-  );
   const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlySet<unknown>>(
     () => new Set<unknown>([])
   );
-  console.log(filters)
 
   const columnz = useMemo((): readonly Column<{[key: string]: string}>[] => {
     return columns.map((beep: Column<{[key: string]: string}>) => (
@@ -114,23 +124,9 @@ export default function Grouping({columns, rowData}: gridProps) {
   const filteredRows = useMemo(() => {
     const columnNames = Object.keys(rows[0])
     return rows.filter((r) => {
-      return (
-        (filters[columnNames[0]] && r[columnNames[0]] ? r[columnNames[0]].includes(filters[columnNames[0]]) : true) &&
-        (filters[columnNames[1]] && r[columnNames[1]] ? r[columnNames[1]].includes(filters[columnNames[1]]) : true) &&
-        (filters[columnNames[2]] && r[columnNames[2]] ? r[columnNames[2]].includes(filters[columnNames[2]]) : true) &&
-        (filters[columnNames[3]] && r[columnNames[3]] ? r[columnNames[3]].includes(filters[columnNames[3]]) : true) &&
-        (filters[columnNames[4]] && r[columnNames[4]] ? r[columnNames[4]].includes(filters[columnNames[4]]) : true) &&
-        (filters[columnNames[5]] && r[columnNames[5]] ? r[columnNames[5]].includes(filters[columnNames[5]]) : true) &&
-        (filters[columnNames[6]] && r[columnNames[6]] ? r[columnNames[6]].includes(filters[columnNames[6]]) : true) &&
-        (filters[columnNames[7]] && r[columnNames[7]] ? r[columnNames[7]].includes(filters[columnNames[7]]) : true) &&
-        (filters[columnNames[8]] && r[columnNames[8]] ? r[columnNames[8]].includes(filters[columnNames[8]]) : true) &&
-        (filters[columnNames[9]] && r[columnNames[9]] ? r[columnNames[9]].includes(filters[columnNames[9]]) : true) &&
-        (filters[columnNames[10]] && r[columnNames[10]] ? r[columnNames[10]].includes(filters[columnNames[10]]) : true) &&
-        (filters[columnNames[11]] && r[columnNames[11]] ? r[columnNames[11]].includes(filters[columnNames[11]]) : true) &&
-        (filters[columnNames[12]] && r[columnNames[12]] ? r[columnNames[12]].includes(filters[columnNames[12]]) : true) &&
-        (filters[columnNames[13]] && r[columnNames[13]] ? r[columnNames[13]].includes(filters[columnNames[13]]) : true) &&
-        (filters[columnNames[14]] && r[columnNames[14]] ? r[columnNames[14]].includes(filters[columnNames[14]]) : true)
-      )
+      return columnNames.reduce((a, b) => {
+        return a && (filters[b] && r[b] ? r[b].includes(filters[b]) : true)
+      }, true)
     });
   }, [rows, filters]);
 
@@ -150,6 +146,13 @@ export default function Grouping({columns, rowData}: gridProps) {
     setExpandedGroupIds(new Set());
   }
 
+  const gridElement = (
+    <DataGrid
+      columns={columns}
+      rows={rows}
+    />
+  );
+
   return (
     <div className="groupingClassname">
       <b>Group by columns:</b>
@@ -165,8 +168,19 @@ export default function Grouping({columns, rowData}: gridProps) {
           </label>
         ))}
       </div>
+      <div className='toolbarClassname'>
+        <ExportButton onExport={() => exportToCsv(gridElement, 'example_export.csv')}>
+          Export to CSV
+        </ExportButton>
+        <ExportButton onExport={() => exportToXlsx(gridElement, 'example_export.xlsx')}>
+          Export to XSLX
+        </ExportButton>
+        <ExportButton onExport={() => exportToPdf(gridElement, 'example_export.pdf')}>
+          Export to PDF
+        </ExportButton>
+      </div>
       <FilterContext.Provider value={filters}>
-        <DataGrid
+        {<DataGrid
           columns={columnz}
           rows={filteredRows}
           rowKeyGetter={rowKeyGetter}
@@ -178,7 +192,7 @@ export default function Grouping({columns, rowData}: gridProps) {
           onExpandedGroupIdsChange={setExpandedGroupIds}
           defaultColumnOptions={{ resizable: true }}
           headerRowHeight={70}
-        />
+        />}
       </FilterContext.Provider>
     </div>
   );
